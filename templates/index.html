@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Style Preference Assessment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Learning Style Preference Assessment</h1>
+        <p>This assessment will help you identify your preferred learning style(s) and provide personalized recommendations to enhance your learning experience.</p>
+        
+        <h2>Instructions</h2>
+        <p>Rate each statement on a scale of 1-5 based on how well it describes you:</p>
+        <ul>
+            <li>1 = Strongly Disagree</li>
+            <li>2 = Disagree</li>
+            <li>3 = Neutral</li>
+            <li>4 = Agree</li>
+            <li>5 = Strongly Agree</li>
+        </ul>
+        
+        <p>The assessment consists of 30 questions covering different learning preferences:</p>
+        <ul>
+            <li>Visual</li>
+            <li>Auditory</li>
+            <li>Reading/Writing</li>
+            <li>Kinesthetic</li>
+            <li>Deep Learning</li>
+            <li>Strategic Learning</li>
+        </ul>
+        
+        <a href="{{ url_for('assessment') }}" class="btn">Start Assessment</a>
+    </div>
+</body>
+</html>

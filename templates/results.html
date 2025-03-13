@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Results - Learning Style Preference</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Your Learning Style Results</h1>
+        
+        <div class="results-summary">
+            <p>Based on your responses, your primary learning style(s) are:</p>
+            <div class="primary-styles">
+                {% for style in primary_styles %}
+                <div class="primary-style">{{ style }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="scores-container">
+            <h2>Your Scores by Category</h2>
+            <div class="scores">
+                {% for style, score in scores.items() %}
+                <div class="score-item">
+                    <div class="style-name">{{ style }}</div>
+                    <div class="score-bar-container">
+                        <div class="score-bar" style="width: {{ score * 4 }}%"></div>
+                        <span class="score-value">{{ score }}/25</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="recommendations">
+            <h2>Learning Recommendations Based on Your Style</h2>
+            {% for style, recs in recommendations.items() %}
+            <div class="style-recommendations">
+                <h3>For {{ style }} Learners:</h3>
+                <ul>
+                    {% for rec in recs %}
+                    <li>{{ rec }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+            
+            <div class="reminder">
+                <p>Remember that using techniques from multiple learning preferences often leads to better outcomes than relying solely on your dominant style.</p>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('assessment') }}" class="btn">Take Assessment Again</a>
+        <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
+    </div>
+</body>
+</html>
