@@ -1,110 +1,51 @@
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, Response
 import os
 import json
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY') or os.urandom(24)
+# Ensure FLASK_SECRET_KEY is set in your environment for production, 
+# os.urandom(24) is a fallback for development.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 
-# Learning style categories and questions
-learning_styles = {
-    "Visual": {
-        "questions": [
-            "I prefer to see information written down.",
-            "I easily remember faces but forget names.",
-            "I use color-coding to organize information.",
-            "Diagrams and charts help me understand complex ideas.",
-            "I can easily visualize objects, plans, and outcomes in my mind."
-        ],
-        "recommendations": [
-            "Mind mapping - Create visual diagrams connecting related concepts",
-            "Color-coding - Use different colors for notes, categories, and important points",
-            "Flashcards - Create visual study aids with diagrams or symbols",
-            "Visualization - Picture concepts in your mind before tests",
-            "Graphic organizers - Use charts, timelines, and diagrams to organize information"
-        ]
-    },
-    "Auditory": {
-        "questions": [
-            "I prefer verbal instructions over written ones.",
-            "I enjoy discussing ideas and concepts with others.",
-            "I remember information better when I say it aloud.",
-            "Background sounds or music help me concentrate.",
-            "I find it easier to follow a spoken lecture than reading material."
-        ],
-        "recommendations": [
-            "Recorded lectures - Record and replay important information",
-            "Study groups - Discuss concepts verbally with peers",
-            "Self-explanation - Teach concepts aloud to yourself or others",
-            "Audio resources - Use audiobooks and podcasts",
-            "Verbal repetition - Recite important information aloud"
-        ]
-    },
-    "Reading/Writing": {
-        "questions": [
-            "I take detailed notes when learning something new.",
-            "I prefer to read about a concept rather than have someone explain it.",
-            "I organize my thoughts by writing them down.",
-            "I enjoy creating written lists, outlines, and summaries.",
-            "I prefer text-based learning materials over videos or demonstrations."
-        ],
-        "recommendations": [
-            "Detailed notes - Rewrite notes in your own words",
-            "Outlines - Create hierarchical structures of information",
-            "Written summaries - Condense key points after studying",
-            "Text-heavy resources - Seek out articles and books on topics",
-            "Writing practice - Create sample questions and answers"
-        ]
-    },
-    "Kinesthetic": {
-        "questions": [
-            "I prefer hands-on activities over lectures.",
-            "I tend to use gestures and hand movements when speaking.",
-            "I become restless during long periods of inactivity.",
-            "I learn best when I can physically practice a skill.",
-            "I prefer to try things out rather than read instructions."
-        ],
-        "recommendations": [
-            "Hands-on experiments - Create physical models or demonstrations",
-            "Movement while studying - Walk or move while reviewing material",
-            "Role-playing - Act out scenarios or processes",
-            "Real-world application - Find practical ways to apply concepts",
-            "Study breaks - Take short, active breaks between study sessions"
-        ]
-    },
-    "Deep Learning": {
-        "questions": [
-            "I seek to understand the underlying principles behind what I'm learning.",
-            "I naturally look for connections between different subjects.",
-            "I question assumptions and look for evidence before accepting ideas.",
-            "I enjoy exploring complex problems and concepts.",
-            "I prefer open-ended questions over memorization tasks."
-        ],
-        "recommendations": [
-            "Concept mapping - Create diagrams showing relationships between ideas",
-            "Socratic questioning - Ask probing questions about the material",
-            "Interdisciplinary connections - Link new information to other subjects",
-            "Case studies - Examine real-world examples of theoretical concepts",
-            "Teaching others - Explain concepts to deepen your understanding"
-        ]
-    },
-    "Strategic Learning": {
-        "questions": [
-            "I adapt my study approach based on what's being assessed.",
-            "I'm good at managing my time and prioritizing tasks.",
-            "I focus more energy on content that will be evaluated.",
-            "I plan my approach before starting a learning task.",
-            "I set clear goals for what I want to accomplish when studying."
-        ],
-        "recommendations": [
-            "Practice tests - Create and take sample assessments",
-            "Time management tools - Break studying into scheduled sessions",
-            "Prioritization - Focus on high-value content first",
-            "Goal-setting - Establish clear learning objectives",
-            "Self-assessment - Regularly evaluate your understanding"
-        ]
-    }
-}
+# Global variables for learning data
+LEARNING_STYLES_DATA = []
+learning_styles = {}
+
+def load_and_transform_data(file_path='learning_data.json'):
+    """Loads data from JSON file and transforms it."""
+    global LEARNING_STYLES_DATA, learning_styles
+    try:
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        
+        transformed_styles = {
+            item['style_name']: {
+                "questions": item.get("questions", []),
+                "recommendations": item.get("recommendations", []),
+                "category": item.get("category", "N/A"),
+                "description": item.get("description", "N/A")
+            }
+            for item in data
+        }
+        LEARNING_STYLES_DATA = data
+        learning_styles = transformed_styles
+        app.logger.info(f"Successfully loaded and processed data from {file_path}")
+    except FileNotFoundError:
+        app.logger.error(f"ERROR: '{file_path}' not found. Application will run with no assessment data.")
+        LEARNING_STYLES_DATA = []
+        learning_styles = {}
+    except json.JSONDecodeError:
+        app.logger.error(f"ERROR: Failed to decode '{file_path}'. Check syntax. Application will run with no assessment data.")
+        LEARNING_STYLES_DATA = []
+        learning_styles = {}
+    except Exception as e:
+        app.logger.error(f"An unexpected error occurred during JSON loading or processing from {file_path}: {e}")
+        LEARNING_STYLES_DATA = []
+        learning_styles = {}
+
+# Load data on application startup
+load_and_transform_data()
 
 @app.route('/')
 def index():
@@ -129,32 +70,133 @@ def assessment():
 @app.route('/results', methods=['POST'])
 def results():
     if request.method == 'POST':
-        scores = {}
-        for style in learning_styles:
-            scores[style] = 0
+        try:
+            if not learning_styles: # Check if learning_styles data failed to load
+                app.logger.error("Attempted to calculate results with no learning styles data loaded.")
+                return "Error: Assessment data is unavailable. Please contact the administrator.", 500
+
+            scores = {}
+            for style_name in learning_styles:
+                scores[style_name] = 0
+            
+            has_scores = False
+            for key, value in request.form.items():
+                if key.startswith('question_') and not key.endswith('_style'):
+                    # key is like "question_1", "question_2", etc.
+                    score = int(value) # Potential ValueError
+                    has_scores = True
+                    
+                    # Retrieve the style associated with this question
+                    style_for_question = request.form.get(f"{key}_style")
+                    
+                    if style_for_question and style_for_question in scores:
+                        scores[style_for_question] += score
+                    else:
+                        # Log if a style submitted from form is not in our learning_styles keys
+                        app.logger.warning(f"Received style '{style_for_question}' for question '{key}' which is not a recognized learning style.")
+            
+            if not has_scores and learning_styles : # No scores submitted, but styles exist
+                 app.logger.info("No scores were submitted in the form.")
+                 # It might be better to redirect to assessment or show a message
+                 # For now, it will proceed and likely show 0 for all scores.
+
+            # Find highest scoring styles
+            # Handle case where scores might be empty if no questions were processed or all scores are 0
+            if not scores: # Should not happen if learning_styles is populated
+                 app.logger.error("Scores dictionary is empty before calculating max_score.")
+                 return "Error: Could not calculate scores. No learning styles defined.", 500
+            
+            if not any(scores.values()): # All scores are zero
+                max_score = 0 # Avoid ValueError on max() of empty sequence if all scores were 0 and filtered out
+            else:
+                max_score = max(scores.values())
+
+            primary_styles = [style for style, score in scores.items() if score == max_score and max_score > 0] # Ensure max_score > 0 for a style to be primary
+            
+            # Get recommendations for primary styles
+            recommendations = {}
+            for style in primary_styles:
+                recommendations[style] = learning_styles[style]["recommendations"]
+
+            # Store results in session for download
+            session['assessment_results'] = {
+                'scores': scores,
+                'primary_styles': primary_styles,
+                'recommendations': recommendations,
+                'learning_styles_data': learning_styles 
+            }
+            
+            return render_template('results.html', scores=scores, primary_styles=primary_styles, 
+                                   recommendations=recommendations, learning_styles=learning_styles)
         
-        for key, value in request.form.items():
-            if key.startswith('question_'):
-                question_number = int(key.split('_')[1])
-                score = int(value)
-                
-                # Find which style this question belongs to
-                style_index = (question_number - 1) // 5
-                style = list(learning_styles.keys())[style_index]
-                
-                scores[style] += score
-        
-        # Find highest scoring styles
-        max_score = max(scores.values())
-        primary_styles = [style for style, score in scores.items() if score == max_score]
-        
-        # Get recommendations for primary styles
-        recommendations = {}
-        for style in primary_styles:
-            recommendations[style] = learning_styles[style]["recommendations"]
-        
-        return render_template('results.html', scores=scores, primary_styles=primary_styles, 
-                               recommendations=recommendations, learning_styles=learning_styles)
+        except ValueError as e:
+            app.logger.error(f"ValueError during results processing: {e}. Form data: {request.form}")
+            return "An error occurred while processing your results due to invalid data. Please try again.", 400
+        except Exception as e:
+            app.logger.error(f"Unexpected error during results processing: {e}")
+            return "An unexpected error occurred. Please try again later.", 500
+
+@app.route('/download_results')
+def download_results():
+    results_data = session.get('assessment_results')
+    
+    if not results_data:
+        app.logger.info("Attempted to download results but no data found in session. Redirecting to index.")
+        return redirect(url_for('index')) 
+
+    scores = results_data.get('scores', {})
+    primary_styles = results_data.get('primary_styles', [])
+    # learning_styles_data is used for descriptions and categories
+    learning_styles_data = results_data.get('learning_styles_data', {})
+
+    # Defensive check in case learning_styles_data itself is missing from session, though unlikely if session was set correctly.
+    if not learning_styles_data:
+        app.logger.error("Learning styles data is missing from session for download. This indicates a problem with session data.")
+        return "Error: Could not retrieve complete results data for download. Please try taking the assessment again.", 500
+
+    text_content = "Learning Style Assessment Results\n"
+    text_content += "=================================\n\n"
+
+    text_content += "Primary Learning Style(s):\n"
+    if primary_styles:
+        for style_name in primary_styles:
+            description = learning_styles_data.get(style_name, {}).get('description', 'N/A')
+            text_content += f"- {style_name}: {description}\n"
+    else:
+        text_content += "- No primary style identified.\n"
+    text_content += "\n"
+
+    text_content += "All Scores:\n"
+    if scores:
+        for style_name, score_value in scores.items():
+            category = learning_styles_data.get(style_name, {}).get('category', 'N/A')
+            description = learning_styles_data.get(style_name, {}).get('description', 'N/A')
+            text_content += f"- {style_name} ({category}): {score_value}/25\n"
+            text_content += f"  Description: {description}\n"
+    else:
+        text_content += "- No scores available.\n"
+    text_content += "\n"
+
+    text_content += "Recommendations:\n"
+    if recommendations:
+        for style_name, rec_list in recommendations.items():
+            if style_name in primary_styles: # Only show recommendations for primary styles
+                text_content += f"\nFor {style_name} Learners:\n"
+                if rec_list:
+                    for rec in rec_list:
+                        text_content += f"- {rec}\n"
+                else:
+                    text_content += "- No specific recommendations for this style.\n"
+    else:
+        text_content += "- No recommendations available.\n"
+    
+    text_content += "\n\nReminder: Using techniques from multiple learning preferences often leads to better outcomes."
+
+    return Response(
+        text_content,
+        mimetype="text/plain",
+        headers={"Content-Disposition": "attachment;filename=learning_style_results.txt"}
+    )
 
 if __name__ == '__main__':
     # Make sure templates directory exists

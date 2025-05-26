@@ -40,6 +40,7 @@
                         </label>
                         {% endfor %}
                     </div>
+                    <input type="hidden" name="question_{{ question.number }}_style" value="{{ question.style }}">
                 </div>
             {% endfor %}
             
