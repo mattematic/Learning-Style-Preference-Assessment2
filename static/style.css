@@ -6,97 +6,116 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.7;
+    color: #444;
+    background-color: #f4f7f6;
 }
 
 .container {
-    max-width: 900px;
+    max-width: 850px;
     margin: 2rem auto;
-    padding: 2rem;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    font-size: 2.2rem;
-    color: #2c3e50;
-    margin-bottom: 1.5rem;
+    font-size: 2.4rem;
+    color: #1a5276; /* Darker blue */
+    margin-bottom: 2rem;
     text-align: center;
 }
 
 h2 {
-    font-size: 1.6rem;
-    color: #3498db;
-    margin: 1.5rem 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #eaeaea;
+    font-size: 1.8rem;
+    color: #1abc9c; /* Teal */
+    margin: 2rem 0 1.2rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #e0e0e0;
 }
 
 h3 {
-    font-size: 1.3rem;
-    color: #2c3e50;
-    margin: 1.2rem 0 0.7rem;
+    font-size: 1.4rem;
+    color: #2c3e50; /* Dark grayish blue */
+    margin: 1.5rem 0 0.8rem;
 }
 
 p, li {
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem;
+    font-size: 1.05rem;
 }
 
 ul {
-    list-style-position: inside;
-    margin-bottom: 1.5rem;
+    list-style-type: none; /* Remove default bullets */
+    padding-left: 0;
+    margin-bottom: 1.8rem;
 }
+
+li {
+    padding-left: 1.5em; /* Space for custom bullet */
+    position: relative;
+}
+
+li::before {
+    content: "✓"; /* Custom bullet */
+    position: absolute;
+    left: 0;
+    color: #1abc9c; /* Teal to match h2 */
+    font-weight: bold;
+}
+
 
 .btn {
     display: inline-block;
-    background-color: #3498db;
-    color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: 5px;
+    background-color: #1abc9c; /* Teal */
+    color: #fff;
+    padding: 0.9rem 1.8rem;
+    border-radius: 7px;
     text-decoration: none;
-    font-weight: 600;
-    transition: background-color 0.3s;
+    font-weight: bold;
+    transition: background-color 0.25s ease, transform 0.2s ease;
     border: none;
     cursor: pointer;
-    font-size: 1rem;
-    margin-top: 1rem;
+    font-size: 1.05rem;
+    margin-top: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .btn:hover {
-    background-color: #2980b9;
+    background-color: #16a085; /* Darker teal */
+    transform: translateY(-2px);
 }
 
 .btn.secondary {
-    background-color: #7f8c8d;
+    background-color: #95a5a6; /* Clouds */
     margin-left: 1rem;
 }
 
 .btn.secondary:hover {
-    background-color: #6c7a7d;
+    background-color: #7f8c8d; /* Asbestos */
+    transform: translateY(-2px);
 }
 
 .instructions {
-    background-color: #f1f8ff;
-    padding: 1rem;
-    border-radius: 5px;
-    margin-bottom: 2rem;
+    background-color: #eafaf1; /* Light teal background */
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2.5rem;
 }
 
+/* Styles for question and rating are mostly for assessment.html, but good to keep consistent */
 .question {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #eaeaea;
+    margin-bottom: 1.8rem;
+    padding-bottom: 1.8rem;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .rating {
     display: flex;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    max-width: 300px;
+    justify-content: space-around; /* Better spacing for radio buttons */
+    margin-top: 0.8rem;
 }
 
 .rating label {
@@ -104,114 +123,222 @@ ul {
     flex-direction: column;
     align-items: center;
     cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.rating label:hover {
+    background-color: #e0f7fa; /* Light cyan on hover */
+}
+
+.rating input[type="radio"] { /* Hide original radio button */
+    opacity: 0;
+    position: fixed;
+    width: 0;
 }
 
 .rating span {
     display: block;
-    margin-top: 0.3rem;
-    font-weight: 600;
+    margin-top: 0.4rem;
+    font-weight: bold;
+    font-size: 0.9rem;
 }
+
+.rating input[type="radio"]:checked + span {
+    color: #1abc9c; /* Teal for selected option */
+}
+
 
 .submit-container {
-    margin-top: 2rem;
+    margin-top: 2.5rem;
     text-align: center;
 }
 
+/* Results Page Specific Styles */
 .results-summary {
-    background-color: #ebf5fb;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
+    background-color: #e8f6f3; /* Light teal/green */
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2.5rem;
     text-align: center;
+    border: 1px solid #d0e9e4;
+}
+
+.results-summary p {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
 }
 
 .primary-styles {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1rem;
+    gap: 1.5rem; /* Increased gap */
+    margin-top: 1.5rem;
+}
+
+.primary-style-item { /* Added for better structure */
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    width: calc(50% - 1rem); /* Two items per row on larger screens */
+    min-width: 280px;
 }
 
 .primary-style {
-    background-color: #3498db;
+    background-color: #1abc9c; /* Teal */
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
+    padding: 0.7rem 1.2rem;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    display: inline-block; /* Allows for padding and centering */
+    margin-bottom: 0.8rem;
+}
+
+.primary-style-description {
+    font-size: 1rem;
+    color: #555;
+}
+
+
+.scores-container {
+    margin-bottom: 2.5rem;
 }
 
 .scores {
-    margin: 1.5rem 0;
+    margin: 2rem 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
 }
 
 .score-item {
-    margin-bottom: 1rem;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: transform 0.2s ease;
+}
+
+.score-item:hover {
+    transform: translateY(-3px);
 }
 
 .style-name {
-    font-weight: 600;
-    margin-bottom: 0.3rem;
+    font-weight: bold;
+    font-size: 1.25rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.style-category {
+    font-size: 0.9rem;
+    color: #7f8c8d; /* Asbestos */
+    margin-bottom: 0.5rem;
+}
+
+.style-description { /* Added for consistency with primary styles */
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 1rem;
 }
 
 .score-bar-container {
-    height: 25px;
+    height: 30px; /* Increased height */
     width: 100%;
-    background-color: #ecf0f1;
-    border-radius: 5px;
+    background-color: #e0e0e0; /* Lighter grey */
+    border-radius: 8px;
     position: relative;
+    overflow: hidden; /* Ensures score bar stays within container */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .score-bar {
     height: 100%;
-    background-color: #3498db;
-    border-radius: 5px;
-    transition: width 1s ease-in-out;
+    background-image: linear-gradient(45deg, #1abc9c, #16a085); /* Teal gradient */
+    border-radius: 8px 0 0 8px; /* Keep left radius, remove right if text is inside */
+    transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); /* Smoother transition */
+    display: flex; /* For aligning text inside */
+    align-items: center;
+    justify-content: flex-end; /* Align text to the right */
+    padding-right: 10px; /* Padding for the text */
 }
 
 .score-value {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-weight: 600;
-    color: #333;
+    /* position: absolute; right: 10px; top: 50%; transform: translateY(-50%); -- Old styling */
+    font-weight: bold;
+    color: #fff; /* White text for better contrast on gradient */
+    font-size: 0.9rem;
+}
+
+.recommendations {
+    margin-top: 2rem;
 }
 
 .style-recommendations {
-    background-color: #f8f9fa;
-    padding: 1.2rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    border-left: 5px solid #3498db;
+    background-color: #ffffff;
+    padding: 1.8rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border-left: 7px solid #1abc9c; /* Thicker, teal border */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .style-recommendations h3 {
     margin-top: 0;
+    color: #16a085; /* Darker teal */
 }
 
 .reminder {
-    background-color: #e8f8f5;
-    padding: 1rem;
+    background-color: #e6fef9; /* Very light teal */
+    padding: 1.5rem;
     border-radius: 8px;
-    margin: 2rem 0;
+    margin: 2.5rem 0 1.5rem;
     font-style: italic;
+    color: #34495e; /* Wet asphalt */
+    border: 1px solid #c8f0e8;
 }
 
 @media (max-width: 768px) {
     .container {
-        padding: 1.5rem;
-        margin: 1rem;
+    padding: 2rem; /* Increased padding for smaller screens */
+    margin: 1rem auto;
     }
     
     h1 {
-        font-size: 1.8rem;
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.6rem;
+    }
+
+    h3 {
+        font-size: 1.3rem;
     }
     
+    .primary-styles {
+        flex-direction: column; /* Stack primary styles on smaller screens */
+        gap: 1rem;
+    }
+
+    .primary-style-item {
+        width: 100%; /* Full width for stacked items */
+    }
+
+    .scores {
+        grid-template-columns: 1fr; /* Single column for scores */
+        gap: 1rem;
+    }
+
     .btn {
         display: block;
         width: 100%;
         margin-bottom: 1rem;
+        padding: 1rem 1.5rem; /* Adjust padding for better tap targets */
     }
     
     .btn.secondary {
@@ -220,5 +347,10 @@ ul {
     
     .rating {
         max-width: 100%;
+        flex-wrap: wrap; /* Allow rating options to wrap */
+    }
+
+    .rating label {
+        margin-bottom: 0.5rem; /* Space between wrapped rating options */
     }
 }
