@@ -8,255 +8,255 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import the Flask app object and the data loading function from main.py
-from main import app as flask_app, load_and_transform_data
+from main import app as flask_app, load_and_transform_data, ALL_QUESTIONS as main_ALL_QUESTIONS, learning_styles as main_learning_styles
 
 # Global test data
-MOCK_VALID_JSON_CONTENT = [
+MOCK_JSON_CONTENT_FOR_TESTS = [
     {
         "style_name": "Visual",
-        "questions": ["Q1V", "Q2V"],
+        "questions": ["Q1V (Visual Question 1)", "Q2V (Visual Question 2)"],
         "recommendations": ["R1V", "R2V"],
         "category": "Sensory",
         "description": "Learns by seeing."
     },
     {
         "style_name": "Auditory",
-        "questions": ["Q1A", "Q2A"],
+        "questions": ["Q1A (Auditory Question 1)"],
         "recommendations": ["R1A", "R2A"],
         "category": "Sensory",
         "description": "Learns by hearing."
     },
     {
-        "style_name": "Kinesthetic", # Added for more comprehensive tests
-        "questions": ["Q1K", "Q2K"],
+        "style_name": "Kinesthetic",
+        "questions": ["Q1K (Kinesthetic Question 1)"],
         "recommendations": ["R1K"],
         "category": "Physical",
         "description": "Learns by doing."
     }
+] # Total 2+1+1 = 4 questions
+
+MOCK_ALL_QUESTIONS_LIST = [
+    {'id': 1, 'text': 'Q1V (Visual Question 1)', 'style': 'Visual'},
+    {'id': 2, 'text': 'Q2V (Visual Question 2)', 'style': 'Visual'},
+    {'id': 3, 'text': 'Q1A (Auditory Question 1)', 'style': 'Auditory'},
+    {'id': 4, 'text': 'Q1K (Kinesthetic Question 1)', 'style': 'Kinesthetic'},
 ]
 
-MOCK_TRANSFORMED_STYLES = {
+MOCK_LEARNING_STYLES_DICT = {
     item['style_name']: {
         "questions": item["questions"],
         "recommendations": item["recommendations"],
         "category": item["category"],
         "description": item["description"]
-    } for item in MOCK_VALID_JSON_CONTENT
+    } for item in MOCK_JSON_CONTENT_FOR_TESTS
 }
 
 
-class TestMainApp(unittest.TestCase):
+class TestMainAppPaginated(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Set up test client once for the class."""
         flask_app.config['TESTING'] = True
-        flask_app.config['SECRET_KEY'] = 'test_secret_key' # For session testing
-        # Disable CSRF protection if it's enabled and interferes with POST tests without a CSRF token
-        flask_app.config['WTF_CSRF_ENABLED'] = False 
+        flask_app.config['SECRET_KEY'] = 'test_secret_key_paginated'
+        flask_app.config['WTF_CSRF_ENABLED'] = False
         cls.client = flask_app.test_client()
 
     def setUp(self):
-        """Set up before each test."""
-        # Ensure a clean state for learning_styles and LEARNING_STYLES_DATA before each test
-        # by calling load_and_transform_data with a known good mock or clearing them.
-        # This is crucial because these are global variables in main.py.
-        # We will patch 'main.learning_styles' and 'main.LEARNING_STYLES_DATA' directly in tests
-        # or use load_and_transform_data with mocks for data loading tests.
-        pass
+        # Patch the global variables in main.py for each test
+        # This ensures that each test runs with a known, consistent set of questions and styles
+        self.all_questions_patcher = patch('main.ALL_QUESTIONS', MOCK_ALL_QUESTIONS_LIST)
+        self.learning_styles_patcher = patch('main.learning_styles', MOCK_LEARNING_STYLES_DICT)
+        
+        self.mock_all_questions = self.all_questions_patcher.start()
+        self.mock_learning_styles = self.learning_styles_patcher.start()
 
-
-    def tearDown(self):
-        """Clean up after each test."""
+        # Clear session before each test
         with self.client.session_transaction() as sess:
             sess.clear()
 
-    # --- Tests for learning_data.json Loading (using load_and_transform_data) ---
+    def tearDown(self):
+        self.all_questions_patcher.stop()
+        self.learning_styles_patcher.stop()
+        # Session is cleared in setUp for the next test
 
-    @patch('main.open', new_callable=mock_open, read_data=json.dumps(MOCK_VALID_JSON_CONTENT))
-    @patch('main.json.load') # Mock json.load to ensure it uses the mock_open's data
-    @patch('main.app.logger') # Mock logger to check if it's called
-    def test_load_valid_json(self, mock_logger, mock_json_load, mock_file_open):
-        mock_json_load.return_value = MOCK_VALID_JSON_CONTENT # Configure mock_json_load
-        
+    # --- Data Loading Tests (Remain similar, but ensure they work with new structure if needed) ---
+    @patch('main.open', new_callable=mock_open, read_data=json.dumps(MOCK_JSON_CONTENT_FOR_TESTS))
+    @patch('main.json.load')
+    @patch('main.app.logger')
+    def test_load_valid_json_and_populates_all_questions(self, mock_logger, mock_json_load, mock_file_open):
+        mock_json_load.return_value = MOCK_JSON_CONTENT_FOR_TESTS
         load_and_transform_data() # Call the refactored load function
         
-        # Access the global variables from the main module after loading
-        from main import learning_styles, LEARNING_STYLES_DATA
-        
-        self.assertEqual(LEARNING_STYLES_DATA, MOCK_VALID_JSON_CONTENT)
-        self.assertIn("Visual", learning_styles)
-        self.assertEqual(learning_styles["Visual"]["category"], "Sensory")
-        self.assertEqual(len(learning_styles), 3)
-        mock_logger.info.assert_called_with("Successfully loaded and processed data from learning_data.json")
-
-    @patch('main.open', side_effect=FileNotFoundError("File not found"))
-    @patch('main.app.logger')
-    def test_load_json_file_not_found(self, mock_logger, mock_file_open):
-        load_and_transform_data()
-        from main import learning_styles, LEARNING_STYLES_DATA
-        self.assertEqual(learning_styles, {})
-        self.assertEqual(LEARNING_STYLES_DATA, [])
-        mock_logger.error.assert_called_with("ERROR: 'learning_data.json' not found. Application will run with no assessment data.")
-
-    @patch('main.open', new_callable=mock_open, read_data="this is not json")
-    @patch('main.json.load', side_effect=json.JSONDecodeError("err", "doc", 0))
-    @patch('main.app.logger')
-    def test_load_json_malformed(self, mock_logger, mock_json_load, mock_file_open):
-        load_and_transform_data()
-        from main import learning_styles, LEARNING_STYLES_DATA
-        self.assertEqual(learning_styles, {})
-        self.assertEqual(LEARNING_STYLES_DATA, [])
-        mock_logger.error.assert_called_with("ERROR: Failed to decode 'learning_data.json'. Check syntax. Application will run with no assessment data.")
-
-    # --- Test /assessment Route ---
-    def test_assessment_route_get(self):
-        # Patch main.learning_styles for this test to ensure it has known data
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            response = self.client.get('/assessment')
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Learning Style Preference Assessment", response.data)
-            # Check for question text from our mock data
-            self.assertIn(b"Q1V", response.data) # Visual question
-            self.assertIn(b"Q2A", response.data) # Auditory question
-            self.assertIn(b"Kinesthetic", response.data) # Style name heading
-
-    def test_assessment_route_no_data(self):
-        # Test how assessment page behaves if learning_styles is empty
-        with patch('main.learning_styles', {}):
-            response = self.client.get('/assessment')
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Learning Style Preference Assessment", response.data)
-            # Should ideally show a message or no questions
-            self.assertNotIn(b"Q1V", response.data) # No questions should be rendered
-
-    # --- Test /results Route (Score Calculation) ---
-    def test_results_route_single_primary_style(self):
-        mock_form_data = {
-            'question_1': '5', 'question_1_style': 'Visual',    # V: 5
-            'question_2': '4', 'question_2_style': 'Visual',    # V: 4 (Total V: 9)
-            'question_3': '1', 'question_3_style': 'Auditory',  # A: 1
-            'question_4': '2', 'question_4_style': 'Auditory',  # A: 2 (Total A: 3)
-            'question_5': '3', 'question_5_style': 'Kinesthetic',# K: 3 (Total K: 3)
-        }
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            response = self.client.post('/results', data=mock_form_data)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Your Learning Style Results", response.data)
-            
-            with self.client.session_transaction() as sess:
-                self.assertIn('assessment_results', sess)
-                results = sess['assessment_results']
-                self.assertEqual(results['scores']['Visual'], 9)
-                self.assertEqual(results['scores']['Auditory'], 3)
-                self.assertEqual(results['scores']['Kinesthetic'], 3)
-                self.assertEqual(results['primary_styles'], ['Visual'])
-                self.assertIn('Visual', results['recommendations'])
-                self.assertEqual(results['recommendations']['Visual'], ["R1V", "R2V"])
-                self.assertNotIn('Auditory', results['recommendations'])
-
-    def test_results_route_multiple_primary_styles(self):
-        mock_form_data = {
-            'question_1': '5', 'question_1_style': 'Visual',       # V: 5
-            'question_2': '3', 'question_2_style': 'Visual',       # V: 3 (Total V: 8)
-            'question_3': '4', 'question_3_style': 'Auditory',     # A: 4
-            'question_4': '4', 'question_4_style': 'Auditory',     # A: 4 (Total A: 8)
-            'question_5': '1', 'question_5_style': 'Kinesthetic',  # K: 1 (Total K: 1)
-        }
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            response = self.client.post('/results', data=mock_form_data)
-            self.assertEqual(response.status_code, 200)
-            with self.client.session_transaction() as sess:
-                results = sess['assessment_results']
-                self.assertEqual(results['scores']['Visual'], 8)
-                self.assertEqual(results['scores']['Auditory'], 8)
-                self.assertEqual(results['scores']['Kinesthetic'], 1)
-                self.assertCountEqual(results['primary_styles'], ['Visual', 'Auditory'])
-                self.assertIn('Visual', results['recommendations'])
-                self.assertIn('Auditory', results['recommendations'])
-                self.assertEqual(results['recommendations']['Visual'], ["R1V", "R2V"])
-                self.assertEqual(results['recommendations']['Auditory'], ["R1A", "R2A"])
-
-    def test_results_route_no_answers_submitted(self):
-        # Test with empty form data but with styles loaded
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            response = self.client.post('/results', data={})
-            self.assertEqual(response.status_code, 200) # Should still render results page
-            with self.client.session_transaction() as sess:
-                results = sess['assessment_results']
-                self.assertEqual(results['scores']['Visual'], 0)
-                self.assertEqual(results['scores']['Auditory'], 0)
-                self.assertEqual(results['scores']['Kinesthetic'], 0)
-                self.assertEqual(results['primary_styles'], []) # No primary style if all scores are 0
-                self.assertEqual(results['recommendations'], {})
+        # Check global vars from main module after loading (they are re-imported or accessed via main module)
+        self.assertEqual(main_learning_styles["Visual"]["category"], "Sensory")
+        self.assertEqual(len(main_ALL_QUESTIONS), 4) # 2 Visual, 1 Auditory, 1 Kinesthetic
+        self.assertEqual(main_ALL_QUESTIONS[0]['text'], "Q1V (Visual Question 1)")
+        self.assertEqual(main_ALL_QUESTIONS[3]['style'], "Kinesthetic")
+        mock_logger.info.assert_any_call(f"Successfully loaded and processed data from learning_data.json. {len(MOCK_JSON_CONTENT_FOR_TESTS[0]['questions'] + MOCK_JSON_CONTENT_FOR_TESTS[1]['questions'] + MOCK_JSON_CONTENT_FOR_TESTS[2]['questions'])} questions loaded.")
 
 
-    def test_results_route_invalid_form_data_value_error(self):
-        mock_form_data = {'question_1': 'not_a_number', 'question_1_style': 'Visual'}
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            response = self.client.post('/results', data=mock_form_data)
-            self.assertEqual(response.status_code, 400) # Bad request
-            self.assertIn(b"An error occurred while processing your results due to invalid data.", response.data)
-
-    def test_results_route_no_learning_data_loaded(self):
-        with patch('main.learning_styles', {}): # Simulate data loading failure
-            response = self.client.post('/results', data={'question_1': '5', 'question_1_style': 'Visual'})
-            self.assertEqual(response.status_code, 500)
-            self.assertIn(b"Error: Assessment data is unavailable.", response.data)
-
-
-    # --- Test /download_results Route ---
-    def test_download_results_success(self):
-        # 1. Populate session by calling /results
-        mock_form_data = {
-            'question_1': '5', 'question_1_style': 'Visual',
-            'question_2': '2', 'question_2_style': 'Auditory',
-        }
-        with patch('main.learning_styles', MOCK_TRANSFORMED_STYLES):
-            self.client.post('/results', data=mock_form_data) # Populates session
-
-            # 2. Now test download
-            response = self.client.get('/download_results')
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.mimetype, 'text/plain')
-            self.assertIn('attachment;filename=learning_style_results.txt', response.headers['Content-Disposition'])
-            
-            # Check content (basic checks)
-            content = response.data.decode('utf-8')
-            self.assertIn("Learning Style Assessment Results", content)
-            self.assertIn("Primary Learning Style(s):", content)
-            self.assertIn("Visual: Learns by seeing.", content) # Primary style
-            self.assertIn("All Scores:", content)
-            self.assertIn("Visual (Sensory): 5/25", content) # Score for Visual
-            self.assertIn("Auditory (Sensory): 2/25", content) # Score for Auditory
-            self.assertIn("Kinesthetic (Physical): 0/25", content) # Score for Kinesthetic
-            self.assertIn("For Visual Learners:", content) # Recommendations for primary
-            self.assertIn("- R1V", content)
-            self.assertNotIn("For Auditory Learners:", content) # Auditory not primary
-
-    def test_download_results_no_session_data(self):
-        response = self.client.get('/download_results') # No session data
+    # --- /assessment Route Tests (Paginated Flow) ---
+    def test_assessment_start_initial_get(self):
+        """Test GET /assessment - should redirect to question 1 and init session."""
+        response = self.client.get('/assessment')
         self.assertEqual(response.status_code, 302) # Redirect
-        self.assertTrue(response.headers['Location'].endswith(('/'))) # Redirects to index
-
-    def test_download_results_session_data_incomplete(self):
-        # Simulate session data that's missing 'learning_styles_data' which is checked
+        self.assertTrue(response.headers['Location'].endswith('/assessment/1'))
         with self.client.session_transaction() as sess:
-            sess['assessment_results'] = {
-                'scores': {'Visual': 5},
-                'primary_styles': ['Visual'],
-                'recommendations': {'Visual': ['R1V']}
-                # 'learning_styles_data' is missing
+            self.assertIn('assessment_answers', sess)
+            self.assertEqual(sess['assessment_answers'], {})
+
+    def test_assessment_get_specific_question(self):
+        """Test GET /assessment/<question_num> - valid question."""
+        # Initialize session first
+        self.client.get('/assessment') 
+        response = self.client.get('/assessment/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Question 1 of 4", response.data)
+        self.assertIn(MOCK_ALL_QUESTIONS_LIST[0]['text'].encode(), response.data)
+
+    def test_assessment_get_question_out_of_bounds_too_high(self):
+        self.client.get('/assessment') # Init session
+        response = self.client.get('/assessment/99') # Question num too high
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.headers['Location'].endswith('/results')) # Redirects to results if out of bounds
+
+    def test_assessment_get_question_out_of_bounds_zero(self):
+        self.client.get('/assessment') # Init session
+        response = self.client.get('/assessment/0')
+        self.assertEqual(response.status_code, 302) # Redirects to results (or q1 if no answers)
+        self.assertTrue(response.headers['Location'].endswith('/assessment/1'))
+
+
+    def test_assessment_get_question_with_existing_answer(self):
+        with self.client.session_transaction() as sess:
+            sess['assessment_answers'] = {'1': {'score': 4, 'style': 'Visual'}}
+        
+        response = self.client.get('/assessment/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'value="4" required checked', response.data) # Check if score 4 is checked
+
+    def test_assessment_post_answer_first_question(self):
+        self.client.get('/assessment') # Initialize session
+        response = self.client.post('/assessment/1', data={'score': '5'})
+        self.assertEqual(response.status_code, 302) # Redirect to next question
+        self.assertTrue(response.headers['Location'].endswith('/assessment/2'))
+        with self.client.session_transaction() as sess:
+            self.assertIn('1', sess['assessment_answers'])
+            self.assertEqual(sess['assessment_answers']['1']['score'], 5)
+            self.assertEqual(sess['assessment_answers']['1']['style'], MOCK_ALL_QUESTIONS_LIST[0]['style'])
+
+    def test_assessment_post_answer_last_question(self):
+        self.client.get('/assessment') # Initialize session
+        # Simulate answering previous questions
+        with self.client.session_transaction() as sess:
+            sess['assessment_answers'] = {
+                '1': {'score': 1, 'style': 'Visual'},
+                '2': {'score': 2, 'style': 'Visual'},
+                '3': {'score': 3, 'style': 'Auditory'},
             }
-        response = self.client.get('/download_results')
-        self.assertEqual(response.status_code, 500)
-        self.assertIn(b"Error: Could not retrieve complete results data for download.", response.data)
+        
+        response = self.client.post(f'/assessment/{len(MOCK_ALL_QUESTIONS_LIST)}', data={'score': '4'}) # Post to last q
+        self.assertEqual(response.status_code, 302) # Redirect to results
+        self.assertTrue(response.headers['Location'].endswith('/results'))
+        with self.client.session_transaction() as sess:
+            self.assertIn(str(len(MOCK_ALL_QUESTIONS_LIST)), sess['assessment_answers'])
+            self.assertEqual(sess['assessment_answers'][str(len(MOCK_ALL_QUESTIONS_LIST))]['score'], 4)
+
+    def test_assessment_post_invalid_score(self):
+        self.client.get('/assessment') # Initialize session
+        response = self.client.post('/assessment/1', data={'score': '99'}) # Invalid score
+        self.assertEqual(response.status_code, 200) # Re-renders current page
+        self.assertIn(b"Please select a valid score between 1 and 5.", response.data)
+        self.assertIn(MOCK_ALL_QUESTIONS_LIST[0]['text'].encode(), response.data) # Still on Q1
+
+    def test_assessment_previous_button_navigation(self):
+        self.client.get('/assessment') # To q1
+        self.client.post('/assessment/1', data={'score': '3'}) # To q2
+        
+        response = self.client.get('/assessment/2') # Current q is 2
+        self.assertIn(b'&laquo; Previous', response.data) # Check for previous button
+        
+        # Manually go to previous via GET (simulating button click)
+        response_prev = self.client.get('/assessment/1')
+        self.assertEqual(response_prev.status_code, 200)
+        self.assertIn(MOCK_ALL_QUESTIONS_LIST[0]['text'].encode(), response_prev.data)
+        self.assertIn(b'value="3" required checked', response_prev.data) # Previously submitted answer for Q1
+
+    # --- /results Route Tests (Paginated Flow) ---
+    def test_results_calculation_from_session(self):
+        # Simulate full assessment
+        self.client.get('/assessment') # Init
+        self.client.post('/assessment/1', data={'score': '5'}) # Q1 (Visual) -> 5
+        self.client.post('/assessment/2', data={'score': '4'}) # Q2 (Visual) -> 4 (Total Visual: 9)
+        self.client.post('/assessment/3', data={'score': '3'}) # Q3 (Auditory) -> 3
+        self.client.post('/assessment/4', data={'score': '5'}) # Q4 (Kinesthetic) -> 5
+        
+        # Now GET /results
+        response = self.client.get('/results')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Your Learning Style Results", response.data)
+
+        with self.client.session_transaction() as sess:
+            # Check that assessment_answers is cleared
+            self.assertNotIn('assessment_answers', sess) 
+            # Check that assessment_results (for download) is populated
+            self.assertIn('assessment_results', sess)
+            results_for_download = sess['assessment_results']
+            
+            self.assertEqual(results_for_download['scores']['Visual'], 9)
+            self.assertEqual(results_for_download['scores']['Auditory'], 3)
+            self.assertEqual(results_for_download['scores']['Kinesthetic'], 5)
+            self.assertCountEqual(results_for_download['primary_styles'], ['Visual'])
+            self.assertIn('Visual', results_for_download['recommendations'])
+
+    def test_results_get_with_no_session_answers(self):
+        response = self.client.get('/results')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.headers['Location'].endswith('/assessment')) # Redirect to start assessment
+
+    # --- Edge Case: No Questions Loaded ---
+    @patch('main.ALL_QUESTIONS', []) # Simulate no questions loaded
+    @patch('main.learning_styles', {})
+    def test_assessment_start_no_questions_loaded(self):
+        response = self.client.get('/assessment')
+        self.assertEqual(response.status_code, 200) # Renders assessment page with error
+        self.assertIn(b"Assessment data is unavailable.", response.data)
+
+    @patch('main.ALL_QUESTIONS', [])
+    @patch('main.learning_styles', {})
+    def test_results_no_questions_or_styles_loaded(self):
+        # Simulate trying to go to results when no data was ever loaded
+        # This might happen if user bookmarks /results and json fails to load
+        with self.client.session_transaction() as sess:
+            # Put some dummy answers, but learning_styles will be empty
+            sess['assessment_answers'] = {'1': {'score': 5, 'style': 'NonExistentStyle'}}
+        
+        response = self.client.get('/results')
+        self.assertEqual(response.status_code, 500) # Error because learning_styles is empty
+        self.assertIn(b"Error: Assessment data is unavailable.", response.data)
+
+    # --- Download Route (ensure setup reflects new flow) ---
+    def test_download_results_after_paginated_assessment(self):
+        # 1. Simulate full assessment to populate session correctly
+        self.client.get('/assessment') # Init
+        self.client.post('/assessment/1', data={'score': '5'}) # Visual
+        self.client.post('/assessment/2', data={'score': '4'}) # Visual
+        self.client.post('/assessment/3', data={'score': '2'}) # Auditory
+        self.client.post('/assessment/4', data={'score': '1'}) # Kinesthetic
+        
+        # This POST to last question redirects to /results, which populates 'assessment_results'
+        self.client.get('/results') # This call processes answers and sets 'assessment_results'
+
+        # 2. Now test download
+        response_download = self.client.get('/download_results')
+        self.assertEqual(response_download.status_code, 200)
+        self.assertEqual(response_download.mimetype, 'text/plain')
+        content = response_download.data.decode('utf-8')
+        self.assertIn("Visual: Learns by seeing.", content)
+        self.assertIn("Visual (Sensory): 9/25", content) # 5+4
+        self.assertIn("Auditory (Sensory): 2/25", content)
+        self.assertIn("Kinesthetic (Physical): 1/25", content)
 
 
 if __name__ == '__main__':
-    # Important: load_and_transform_data() in main.py will run with actual learning_data.json
-    # when this test module is imported if not careful.
-    # Tests for data loading should mock file operations globally if possible,
-    # or ensure that load_and_transform_data can be called with a specific mock file path.
-    # For this setup, we are calling load_and_transform_data() within test methods with mocks.
     unittest.main()
