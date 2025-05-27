@@ -174,7 +174,7 @@ class TestMainAppPaginated(unittest.TestCase):
         self.client.post('/assessment/1', data={'score': '3'}) # To q2
         
         response = self.client.get('/assessment/2') # Current q is 2
-        self.assertIn(b'&laquo; Previous', response.data) # Check for previous button
+        self.assertIn(b'<i class="material-icons left">chevron_left</i>Previous', response.data) # Check for previous button with Materialize icon
         
         # Manually go to previous via GET (simulating button click)
         response_prev = self.client.get('/assessment/1')

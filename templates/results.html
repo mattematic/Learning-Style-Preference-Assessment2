@@ -5,35 +5,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assessment Results - Learning Style Preference</title>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import Materialize CSS-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Page-specific styles for results.html */
+        /* Score progress bar custom appearance */
+        .score-item-card .progress { 
+            background-color: #b2dfdb; /* teal lighten-4 for the track */
+            margin-top: 8px;
+            margin-bottom: 8px;
+            height: 12px; /* Custom height */
+        }
+        .score-item-card .progress .determinate {
+            background-color: #00796b; /* teal darken-2 for the bar */
+        }
+        /* Other styles like .section-title, .score-display, .primary-style-card-title, .score-item-card margin, 
+           and .recommendation-list are now in static/style.css */
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Your Learning Style Results</h1>
+    <nav class="teal darken-2">
+        <div class="nav-wrapper">
+            <a href="{{url_for('index')}}" class="brand-logo"><i class="material-icons left">school</i>Learning Styles</a>
+        </div>
+    </nav>
+
+    <div class="container main-content-area">
+        <h1 class="header center teal-text text-darken-4" style="font-size: 2.8rem;">Your Learning Style Results</h1>
         
-        <div class="results-summary">
-            <p>Based on your responses, your primary learning style(s) are:</p>
-            <div class="primary-styles">
+        <div id="primary-styles-section" class="section scrollspy">
+            <h2 class="section-title"><i class="material-icons left small">star</i>Primary Learning Style(s)</h2>
+            {% if primary_styles %}
+                <div class="row">
                 {% for style in primary_styles %}
-                <div class="primary-style-item">  {# This class was added in CSS, ensuring it's used #}
-                    <div class="primary-style">{{ style }}</div>
-                    <p class="primary-style-description">{{ learning_styles[style].description }}</p>
-                </div>
+                    <div class="col s12 m6">
+                        <div class="card-panel hoverable teal lighten-5">
+                            <h3 class="primary-style-card-title teal-text text-darken-3">{{ style }}</h3>
+                            <p class="grey-text text-darken-2">{{ learning_styles[style].description }}</p>
+                        </div>
+                    </div>
                 {% endfor %}
-            </div>
+                </div>
+            {% else %}
+                 <div class="card-panel yellow lighten-4 yellow-text text-darken-3">
+                    <i class="material-icons left">info_outline</i>No single primary learning style identified. This is perfectly normal and suggests a balanced preference or that you adapt your style to different situations. Consider the recommendations for your highest scoring styles.
+                </div>
+            {% endif %}
         </div>
         
-        <div class="scores-container">
-            <h2>Your Scores by Category</h2>
-            <div class="scores">
+        <div id="all-scores-section" class="section scrollspy">
+            <h2 class="section-title"><i class="material-icons left small">assessment</i>Your Scores by Category</h2>
+            <div class="row">
                 {% for style, score in scores.items() %}
-                <div class="score-item">
-                    <div class="style-name">{{ style }}</div>
-                    <p class="style-category"><em>Category: {{ learning_styles[style].category }}</em></p>
-                    {# Removed redundant style-description from here as it's in primary style section and makes this part cleaner #}
-                    <div class="score-bar-container">
-                        <div class="score-bar" style="width: {{ score * 4 }}%">
-                             <span class="score-value">{{ score }}/25</span>
+                <div class="col s12 m6 l4">
+                    <div class="card hoverable score-item-card">
+                        <div class="card-content">
+                            <span class="card-title teal-text text-darken-2" style="font-size:1.4rem; font-weight:500;">{{ style }}</span>
+                            <p class="grey-text text-darken-1"><em>Category: {{ learning_styles[style].category }}</em></p>
+                            <div class="progress"> {/* Custom height/colors applied via page-specific style block */}
+                                <div class="determinate" style="width: {{ score * 4 }}%;"></div>
+                            </div>
+                            <div class="score-display center-align">{{ score }}/25</div>
                         </div>
                     </div>
                 </div>
@@ -41,35 +76,53 @@
             </div>
         </div>
         
-        <div class="recommendations">
-            <h2>Learning Recommendations Based on Your Style</h2>
+        <div id="recommendations-section" class="section scrollspy">
+            <h2 class="section-title"><i class="material-icons left small">lightbulb_outline</i>Learning Recommendations</h2>
             {% if recommendations %}
                 {% for style, recs in recommendations.items() %}
-                <div class="style-recommendations">
-                    <h3>For {{ style }} Learners:</h3>
-                    <ul>
-                        {% for rec in recs %}
-                        <li>{{ rec }}</li>
-                        {% endfor %}
-                    </ul>
+                <div class="card hoverable">
+                    <div class="card-content">
+                        <span class="card-title teal-text text-darken-2">For {{ style }} Learners</span>
+                        <ul class="custom-list grey-text text-darken-2"> {# Changed to custom-list #}
+                            {% for rec in recs %}
+                            <li>{{ rec }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
                 {% endfor %}
             {% else %}
-                <p>No specific recommendations available at this moment. Explore general learning strategies or retake the assessment for more focused results.</p>
+                <div class="card-panel blue-grey lighten-5 grey-text text-darken-1">
+                    <i class="material-icons left">info_outline</i>No specific recommendations available for your primary style(s) at this moment, or no primary style was identified. Explore general learning strategies or focus on techniques from your highest scoring areas.
+                </div>
             {% endif %}
             
-            <div class="reminder">
-                <p><strong>Remember:</strong> Using techniques from multiple learning preferences often leads to better outcomes than relying solely on your dominant style. Be open to exploring various strategies!</p>
+            <div class="card-panel teal lighten-5" style="margin-top: 2rem;">
+                <p class="teal-text text-darken-4"><strong><i class="material-icons left tiny">speaker_notes</i>Remember:</strong> Using techniques from multiple learning preferences often leads to better outcomes than relying solely on your dominant style. Be open to exploring various strategies!</p>
             </div>
         </div>
         
-        <div class="navigation-buttons" style="text-align: center; margin-top: 2rem; margin-bottom: 1rem;">
-            <a href="{{ url_for('assessment') }}" class="btn">Take Assessment Again</a>
-            <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
-        </div>
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <a href="{{ url_for('download_results') }}" class="btn">Download Results as Text</a>
+        <div class="center-align section" style="margin-top: 3rem; margin-bottom: 1rem;">
+            <a href="{{ url_for('assessment') }}" class="btn-large waves-effect waves-light teal hoverable" style="margin: 5px;">
+                <i class="material-icons left">refresh</i>Take Assessment Again
+            </a>
+            <a href="{{ url_for('index') }}" class="btn-large waves-effect waves-light blue-grey lighten-1 hoverable" style="margin: 5px;">
+                <i class="material-icons left">home</i>Back to Home
+            </a>
+            <a href="{{ url_for('download_results') }}" class="btn-large waves-effect waves-light green darken-1 hoverable" style="margin: 5px;">
+                <i class="material-icons left">download</i>Download Results
+            </a>
         </div>
     </div>
+
+    <!--JavaScript at end of body for optimized loading-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // M.AutoInit(); // Can be used to initialize all Materialize components
+            var scrollSpyElems = document.querySelectorAll('.scrollspy');
+            M.ScrollSpy.init(scrollSpyElems);
+        });
+    </script>
 </body>
 </html>
