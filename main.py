@@ -11,10 +11,11 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 # Global variables for learning data
 LEARNING_STYLES_DATA = []
 learning_styles = {}
+ALL_QUESTIONS = [] # Flat list of all questions
 
 def load_and_transform_data(file_path='learning_data.json'):
-    """Loads data from JSON file and transforms it."""
-    global LEARNING_STYLES_DATA, learning_styles
+    """Loads data from JSON file and transforms it, and populates ALL_QUESTIONS."""
+    global LEARNING_STYLES_DATA, learning_styles, ALL_QUESTIONS
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
@@ -30,19 +31,36 @@ def load_and_transform_data(file_path='learning_data.json'):
         }
         LEARNING_STYLES_DATA = data
         learning_styles = transformed_styles
-        app.logger.info(f"Successfully loaded and processed data from {file_path}")
+        
+        # Populate ALL_QUESTIONS
+        temp_questions = []
+        question_id_counter = 1
+        for style_name, data_val in learning_styles.items():
+            for q_text in data_val.get("questions", []):
+                temp_questions.append({
+                    "id": question_id_counter,
+                    "text": q_text,
+                    "style": style_name
+                })
+                question_id_counter += 1
+        ALL_QUESTIONS = temp_questions
+        app.logger.info(f"Successfully loaded and processed data from {file_path}. {len(ALL_QUESTIONS)} questions loaded.")
+
     except FileNotFoundError:
         app.logger.error(f"ERROR: '{file_path}' not found. Application will run with no assessment data.")
         LEARNING_STYLES_DATA = []
         learning_styles = {}
+        ALL_QUESTIONS = []
     except json.JSONDecodeError:
         app.logger.error(f"ERROR: Failed to decode '{file_path}'. Check syntax. Application will run with no assessment data.")
         LEARNING_STYLES_DATA = []
         learning_styles = {}
+        ALL_QUESTIONS = []
     except Exception as e:
         app.logger.error(f"An unexpected error occurred during JSON loading or processing from {file_path}: {e}")
         LEARNING_STYLES_DATA = []
         learning_styles = {}
+        ALL_QUESTIONS = []
 
 # Load data on application startup
 load_and_transform_data()
@@ -51,90 +69,163 @@ load_and_transform_data()
 def index():
     return render_template('index.html')
 
-@app.route('/assessment')
-def assessment():
-    questions = []
-    question_number = 1
-    
-    for style, data in learning_styles.items():
-        for question in data["questions"]:
-            questions.append({
-                "number": question_number,
-                "text": question,
-                "style": style
-            })
-            question_number += 1
-    
-    return render_template('assessment.html', questions=questions)
+@app.route('/assessment', defaults={'question_num': None}, methods=['GET', 'POST'])
+@app.route('/assessment/<int:question_num>', methods=['GET', 'POST'])
+def assessment(question_num):
+    if not ALL_QUESTIONS:
+        app.logger.error("No questions loaded. Assessment cannot proceed.")
+        # Pass a specific flag or message to the template to indicate no questions
+        return render_template('assessment.html', error_no_questions="Assessment data is unavailable. Please try again later or contact an administrator.")
 
-@app.route('/results', methods=['POST'])
-def results():
+    if request.method == 'GET':
+        if question_num is None:
+            # Start of the assessment
+            session.pop('assessment_answers', None) # Clear previous answers
+            session['assessment_answers'] = {}      # Initialize session storage
+            return redirect(url_for('assessment', question_num=1))
+        
+        # Validate question_num for GET request
+        if not (1 <= question_num <= len(ALL_QUESTIONS)):
+            app.logger.warning(f"GET request for invalid question number: {question_num}. Redirecting to results.")
+            # If answers are present, go to results, else to start.
+            if session.get('assessment_answers'):
+                 return redirect(url_for('results'))
+            return redirect(url_for('assessment', question_num=1))
+
+        current_question_data = ALL_QUESTIONS[question_num - 1]
+        existing_answer_data = session.get('assessment_answers', {}).get(str(question_num))
+        existing_score = existing_answer_data.get('score') if existing_answer_data else None
+        
+        return render_template('assessment.html', 
+                               current_question=current_question_data,
+                               question_num=question_num,
+                               total_questions=len(ALL_QUESTIONS),
+                               existing_score=existing_score)
+
     if request.method == 'POST':
-        try:
-            if not learning_styles: # Check if learning_styles data failed to load
-                app.logger.error("Attempted to calculate results with no learning styles data loaded.")
-                return "Error: Assessment data is unavailable. Please contact the administrator.", 500
+        # Validate question_num for POST request (e.g. user manually changed URL)
+        if not (1 <= question_num <= len(ALL_QUESTIONS)):
+            app.logger.warning(f"POST request for invalid question number: {question_num}. Redirecting to start.")
+            return redirect(url_for('assessment', question_num=1))
 
-            scores = {}
-            for style_name in learning_styles:
-                scores[style_name] = 0
-            
-            has_scores = False
-            for key, value in request.form.items():
-                if key.startswith('question_') and not key.endswith('_style'):
-                    # key is like "question_1", "question_2", etc.
-                    score = int(value) # Potential ValueError
-                    has_scores = True
-                    
-                    # Retrieve the style associated with this question
-                    style_for_question = request.form.get(f"{key}_style")
-                    
-                    if style_for_question and style_for_question in scores:
-                        scores[style_for_question] += score
-                    else:
-                        # Log if a style submitted from form is not in our learning_styles keys
-                        app.logger.warning(f"Received style '{style_for_question}' for question '{key}' which is not a recognized learning style.")
-            
-            if not has_scores and learning_styles : # No scores submitted, but styles exist
-                 app.logger.info("No scores were submitted in the form.")
-                 # It might be better to redirect to assessment or show a message
-                 # For now, it will proceed and likely show 0 for all scores.
+        score_str = request.form.get('score')
+        
+        # Validate score
+        if not score_str or not score_str.isdigit() or not (1 <= int(score_str) <= 5):
+            app.logger.warning(f"Invalid score submitted: '{score_str}' for question {question_num}.")
+            current_question_data = ALL_QUESTIONS[question_num - 1]
+            existing_answer_data = session.get('assessment_answers', {}).get(str(question_num))
+            existing_score = existing_answer_data.get('score') if existing_answer_data else None
+            # Re-render the current question page with an error message
+            return render_template('assessment.html',
+                                   current_question=current_question_data,
+                                   question_num=question_num,
+                                   total_questions=len(ALL_QUESTIONS),
+                                   existing_score=existing_score, # Or the invalid score_str to show it back
+                                   error="Please select a valid score between 1 and 5.")
 
-            # Find highest scoring styles
-            # Handle case where scores might be empty if no questions were processed or all scores are 0
-            if not scores: # Should not happen if learning_styles is populated
-                 app.logger.error("Scores dictionary is empty before calculating max_score.")
-                 return "Error: Could not calculate scores. No learning styles defined.", 500
+        # Store the answer
+        question_id_str = str(question_num)
+        assessment_answers = session.get('assessment_answers', {}) # Should have been initialized at GET /assessment
+        assessment_answers[question_id_str] = {
+            'score': int(score_str),
+            'style': ALL_QUESTIONS[question_num - 1]['style']
+        }
+        session['assessment_answers'] = assessment_answers
+        session.modified = True # Ensure session is saved
+
+        # Determine next step
+        next_question_num = question_num + 1
+        if next_question_num > len(ALL_QUESTIONS):
+            return redirect(url_for('results')) # All questions answered
+        else:
+            return redirect(url_for('assessment', question_num=next_question_num))
+    
+    # Fallback for safety, though specific methods should be handled above.
+    return redirect(url_for('index'))
+
+
+@app.route('/results', methods=['GET', 'POST']) # Allow GET for redirection from invalid question numbers
+def results():
+    # Original /results logic was POST only. Now it needs to handle answers from session.
+    # If it's a GET request, it might be a redirect from an invalid question number.
+    # If no answers in session, redirect to start.
+    if request.method == 'GET':
+        if not session.get('assessment_answers'):
+            app.logger.info("GET request to /results with no assessment answers in session. Redirecting to start.")
+            return redirect(url_for('assessment'))
+        # If there are answers, proceed to calculate and show results.
+        # This assumes that if someone GETs /results, they want to see results from session.
+
+    try:
+        if not learning_styles: # Check if learning_styles data failed to load
+            app.logger.error("Attempted to calculate results with no learning styles data loaded.")
+            return "Error: Assessment data is unavailable. Please contact the administrator.", 500
+
+        submitted_answers = session.get('assessment_answers', {})
+        if not submitted_answers:
+            app.logger.warning("/results accessed with no answers in session. Redirecting to start assessment.")
+            # Optionally, render a message on results page instead of redirecting
+            return redirect(url_for('assessment'))
+
+        scores = {}
+        for style_name in learning_styles: # Initialize all known styles to 0
+            scores[style_name] = 0
+        
+        for q_id_str, answer_data in submitted_answers.items():
+            score = answer_data.get('score')
+            style_for_question = answer_data.get('style')
             
-            if not any(scores.values()): # All scores are zero
-                max_score = 0 # Avoid ValueError on max() of empty sequence if all scores were 0 and filtered out
+            if style_for_question and style_for_question in scores and isinstance(score, int):
+                scores[style_for_question] += score
             else:
-                max_score = max(scores.values())
+                app.logger.warning(f"Invalid answer data in session for question_id '{q_id_str}': score={score}, style='{style_for_question}'")
 
-            primary_styles = [style for style, score in scores.items() if score == max_score and max_score > 0] # Ensure max_score > 0 for a style to be primary
+        # Find highest scoring styles
+        if not scores: # Should not happen if learning_styles is populated
+             app.logger.error("Scores dictionary is empty after processing session answers.")
+             # This could happen if learning_styles was empty or answers were malformed.
+             # Fallback to avoid error on max() if scores is empty.
+             primary_styles = []
+             recommendations = {}
+        elif not any(s > 0 for s in scores.values()): # All scores are zero or negative (though scores should be positive)
+            max_score = 0 
+            primary_styles = [] # No primary style if all scores are 0
+            recommendations = {}
+        else:
+            max_score = max(scores.values())
+            primary_styles = [style for style, score_val in scores.items() if score_val == max_score and max_score > 0]
             
-            # Get recommendations for primary styles
             recommendations = {}
             for style in primary_styles:
-                recommendations[style] = learning_styles[style]["recommendations"]
+                # Ensure style exists in learning_styles (it should, as scores keys come from learning_styles)
+                if style in learning_styles and "recommendations" in learning_styles[style]:
+                    recommendations[style] = learning_styles[style]["recommendations"]
+                else:
+                    app.logger.warning(f"Could not find recommendations for primary style '{style}' in learning_styles.")
 
-            # Store results in session for download
-            session['assessment_results'] = {
-                'scores': scores,
-                'primary_styles': primary_styles,
-                'recommendations': recommendations,
-                'learning_styles_data': learning_styles 
-            }
-            
-            return render_template('results.html', scores=scores, primary_styles=primary_styles, 
-                                   recommendations=recommendations, learning_styles=learning_styles)
+
+        # Store results in session for download (overwrites if already there from a previous run)
+        session['assessment_results'] = {
+            'scores': scores,
+            'primary_styles': primary_styles,
+            'recommendations': recommendations,
+            'learning_styles_data': learning_styles 
+        }
         
-        except ValueError as e:
-            app.logger.error(f"ValueError during results processing: {e}. Form data: {request.form}")
-            return "An error occurred while processing your results due to invalid data. Please try again.", 400
-        except Exception as e:
-            app.logger.error(f"Unexpected error during results processing: {e}")
-            return "An unexpected error occurred. Please try again later.", 500
+        # Clear the raw per-question answers from the session as they are processed
+        session.pop('assessment_answers', None)
+        session.modified = True # Explicitly mark session as modified after pop
+
+        return render_template('results.html', scores=scores, primary_styles=primary_styles, 
+                               recommendations=recommendations, learning_styles=learning_styles)
+    
+    except ValueError as e: # Should be less likely now with session data, but good to keep
+        app.logger.error(f"ValueError during results processing (session data): {e}. Answers: {session.get('assessment_answers')}")
+        return "An error occurred while processing your results. Please try taking the assessment again.", 400
+    except Exception as e:
+        app.logger.error(f"Unexpected error during results processing: {e}. Answers: {session.get('assessment_answers')}")
+        return "An unexpected error occurred. Please try again later.", 500
 
 @app.route('/download_results')
 def download_results():

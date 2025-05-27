@@ -10,44 +10,74 @@
 <body>
     <div class="container">
         <h1>Learning Style Preference Assessment</h1>
-        
-        <form action="{{ url_for('results') }}" method="post">
-            <div class="instructions">
-                <p>Rate each statement on a scale of 1-5 based on how well it describes you:</p>
-                <ul>
-                    <li>1 = Strongly Disagree</li>
-                    <li>2 = Disagree</li>
-                    <li>3 = Neutral</li>
-                    <li>4 = Agree</li>
-                    <li>5 = Strongly Agree</li>
-                </ul>
+
+        {% if error_no_questions %}
+            <div class="error-message">
+                <p>{{ error_no_questions }}</p>
+                <a href="{{ url_for('index') }}" class="btn secondary">Back to Home</a>
+            </div>
+        {% elif error %}
+            <div class="error-message">
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+
+        {% if current_question %}
+            <div class="progress-indicator">
+                <p>Question {{ question_num }} of {{ total_questions }}</p>
+                <div class="progress-bar-container-outer">
+                    <div class="progress-bar-inner" style="width: {{ (question_num / total_questions) * 100 }}%;"></div>
+                </div>
             </div>
 
-            {% set current_style = "" %}
-            {% for question in questions %}
-                {% if current_style != question.style %}
-                    {% set current_style = question.style %}
-                    <h2>{{ current_style }}</h2>
-                {% endif %}
+            <form action="{{ url_for('assessment', question_num=question_num) }}" method="post">
+                <div class="instructions">
+                    <p>Rate the following statement on a scale of 1-5 based on how well it describes you:</p>
+                    <ul>
+                        <li>1 = Strongly Disagree</li>
+                        <li>2 = Disagree</li>
+                        <li>3 = Neutral</li>
+                        <li>4 = Agree</li>
+                        <li>5 = Strongly Agree</li>
+                    </ul>
+                </div>
                 
-                <div class="question">
-                    <p>{{ question.number }}. {{ question.text }}</p>
+                <div class="question single-question">
+                    <p class="question-text">{{ current_question.text }}</p>
                     <div class="rating">
                         {% for i in range(1, 6) %}
                         <label>
-                            <input type="radio" name="question_{{ question.number }}" value="{{ i }}" required>
+                            <input type="radio" name="score" value="{{ i }}" required 
+                                   {% if existing_score == i %}checked{% endif %}>
                             <span>{{ i }}</span>
                         </label>
                         {% endfor %}
                     </div>
-                    <input type="hidden" name="question_{{ question.number }}_style" value="{{ question.style }}">
                 </div>
-            {% endfor %}
-            
-            <div class="submit-container">
-                <button type="submit" class="btn">Submit Assessment</button>
+                
+                <div class="submit-container">
+                    <button type="submit" class="btn">
+                        {% if question_num < total_questions %}
+                            Next Question
+                        {% else %}
+                            View Results
+                        {% endif %}
+                    </button> 
+                </div>
+            </form>
+
+            {% if question_num > 1 %}
+            <div class="navigation-assessment" style="margin-top: 1rem;">
+                 <a href="{{ url_for('assessment', question_num=question_num-1) }}" class="btn secondary smaller">&laquo; Previous</a>
             </div>
-        </form>
+            {% endif %}
+
+        {% elif not error_no_questions %} 
+            {# This case might occur if there's an unexpected issue but not 'error_no_questions' #}
+            <div class="error-message">
+                <p>No question to display. <a href="{{ url_for('index') }}">Return to Home</a>.</p>
+            </div>
+        {% endif %}
     </div>
 </body>
 </html>
