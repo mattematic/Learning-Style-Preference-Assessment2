@@ -5,34 +5,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learning Style Preference Assessment</title>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import Materialize CSS-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Page-specific styles for index.html can go here if needed */
+        /* For example, if a very unique card title style was only for this page: */
+        /* .index-specific-card-title { font-style: italic; } */
+
+        /* The .index-page-list specific override is now part of .custom-list in style.css */
+        /* General body, .brand-logo, .main-content-area are in style.css */
+        /* Materialize heading classes (h1-h6) or text utility classes should be used for card titles for sizing. */
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Learning Style Preference Assessment</h1>
-        <p>This assessment will help you identify your preferred learning style(s) and provide personalized recommendations to enhance your learning experience.</p>
+    <nav class="teal darken-2">
+        <div class="nav-wrapper">
+            <a href="{{url_for('index')}}" class="brand-logo"><i class="material-icons left">school</i>Learning Styles</a>
+        </div>
+    </nav>
+
+    <div class="container main-content-area">
+        <div class="card-panel hoverable">
+            <h2 class="center-align teal-text text-darken-3 card-title">Welcome to the Learning Style Assessment!</h2>
+            <p class="flow-text grey-text text-darken-2">
+                This assessment will help you identify your preferred learning style(s). 
+                Understanding your learning preferences can empower you to optimize your study techniques 
+                and enhance your overall learning experience.
+            </p>
+        </div>
+
+        <div class="card hoverable">
+            <div class="card-content">
+                <h3 class="card-subtitle teal-text text-darken-1"><i class="material-icons left">info_outline</i>Instructions</h3>
+                <p class="grey-text text-darken-1">
+                    Rate each statement on a scale of 1 to 5 based on how well it describes you:
+                </p>
+                <div class="index-page-list">
+                    <ul class="collection with-header">
+                        <li class="collection-header teal lighten-5"><h4 class="teal-text text-darken-4" style="font-size: 1.5rem; margin-top:0; margin-bottom:0;">Rating Scale</h4></li>
+                        <li class="collection-item">1 = Strongly Disagree</li>
+                        <li class="collection-item">2 = Disagree</li>
+                        <li class="collection-item">3 = Neutral</li>
+                        <li class="collection-item">4 = Agree</li>
+                        <li class="collection-item">5 = Strongly Agree</li>
+                    </ul>
+                </div>
+                <p class="grey-text text-darken-1" style="margin-top: 1.5rem;">
+                    The assessment consists of questions covering different learning preferences, such as:
+                </p>
+                <div style="margin-top: 1rem;">
+                    <div class="chip teal lighten-3 white-text">Visual</div>
+                    <div class="chip teal lighten-3 white-text">Auditory</div>
+                    <div class="chip teal lighten-3 white-text">Reading/Writing</div>
+                    <div class="chip teal lighten-3 white-text">Kinesthetic</div>
+                    <div class="chip teal lighten-3 white-text">Deep Learning</div>
+                    <div class="chip teal lighten-3 white-text">Strategic Learning</div>
+                </div>
+            </div>
+        </div>
         
-        <h2>Instructions</h2>
-        <p>Rate each statement on a scale of 1-5 based on how well it describes you:</p>
-        <ul>
-            <li>1 = Strongly Disagree</li>
-            <li>2 = Disagree</li>
-            <li>3 = Neutral</li>
-            <li>4 = Agree</li>
-            <li>5 = Strongly Agree</li>
-        </ul>
-        
-        <p>The assessment consists of 30 questions covering different learning preferences:</p>
-        <ul>
-            <li>Visual</li>
-            <li>Auditory</li>
-            <li>Reading/Writing</li>
-            <li>Kinesthetic</li>
-            <li>Deep Learning</li>
-            <li>Strategic Learning</li>
-        </ul>
-        
-        <a href="{{ url_for('assessment') }}" class="btn">Start Assessment</a>
+        <div class="center-align" style="margin-top: 30px; margin-bottom: 30px;">
+            <a href="{{ url_for('assessment') }}" class="btn-large waves-effect waves-light teal darken-1 hoverable">
+                <i class="material-icons left">play_circle_filled</i>Start Assessment
+            </a>
+        </div>
     </div>
+
+    <!--JavaScript at end of body for optimized loading-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize any Materialize components if needed in the future
+            // For example, M.AutoInit();
+        });
+    </script>
 </body>
 </html>

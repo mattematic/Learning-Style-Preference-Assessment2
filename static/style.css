@@ -1,356 +1,180 @@
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+/* static/style.css */
 
+/* General Body and HTML styling, works with Materialize */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Materialize uses Roboto by default */
     line-height: 1.7;
-    color: #444;
-    background-color: #f4f7f6;
-}
-
-.container {
-    max-width: 850px;
-    margin: 2rem auto;
-    padding: 2.5rem;
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    font-size: 2.4rem;
-    color: #1a5276; /* Darker blue */
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-h2 {
-    font-size: 1.8rem;
-    color: #1abc9c; /* Teal */
-    margin: 2rem 0 1.2rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 2px solid #e0e0e0;
-}
-
-h3 {
-    font-size: 1.4rem;
-    color: #2c3e50; /* Dark grayish blue */
-    margin: 1.5rem 0 0.8rem;
-}
-
-p, li {
-    margin-bottom: 1.1rem;
-    font-size: 1.05rem;
-}
-
-ul {
-    list-style-type: none; /* Remove default bullets */
-    padding-left: 0;
-    margin-bottom: 1.8rem;
-}
-
-li {
-    padding-left: 1.5em; /* Space for custom bullet */
-    position: relative;
-}
-
-li::before {
-    content: "✓"; /* Custom bullet */
-    position: absolute;
-    left: 0;
-    color: #1abc9c; /* Teal to match h2 */
-    font-weight: bold;
-}
-
-
-.btn {
-    display: inline-block;
-    background-color: #1abc9c; /* Teal */
-    color: #fff;
-    padding: 0.9rem 1.8rem;
-    border-radius: 7px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: background-color 0.25s ease, transform 0.2s ease;
-    border: none;
-    cursor: pointer;
-    font-size: 1.05rem;
-    margin-top: 1.2rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.btn:hover {
-    background-color: #16a085; /* Darker teal */
-    transform: translateY(-2px);
-}
-
-.btn.secondary {
-    background-color: #95a5a6; /* Clouds */
-    margin-left: 1rem;
-}
-
-.btn.secondary:hover {
-    background-color: #7f8c8d; /* Asbestos */
-    transform: translateY(-2px);
-}
-
-.instructions {
-    background-color: #eafaf1; /* Light teal background */
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2.5rem;
-}
-
-/* Styles for question and rating are mostly for assessment.html, but good to keep consistent */
-.question {
-    margin-bottom: 1.8rem;
-    padding-bottom: 1.8rem;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.rating {
+    color: #424242; /* grey darken-3, good for text */
+    background-color: #f4f7f6; /* Light grey background, similar to what was used */
     display: flex;
-    justify-content: space-around; /* Better spacing for radio buttons */
-    margin-top: 0.8rem;
-}
-
-.rating label {
-    display: flex;
+    min-height: 100vh;
     flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 5px;
-    transition: background-color 0.2s;
 }
 
-.rating label:hover {
-    background-color: #e0f7fa; /* Light cyan on hover */
+main { /* Used to push footer down if content is short */
+    flex: 1 0 auto;
 }
 
-.rating input[type="radio"] { /* Hide original radio button */
-    opacity: 0;
-    position: fixed;
-    width: 0;
+/* Common custom container adjustments (if Materialize .container needs slight tweaks) */
+/* Materialize .container already handles max-width and centering. 
+   We use .main-content-area for specific top/bottom margins for our content blocks.
+*/
+.main-content-area {
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
-.rating span {
-    display: block;
-    margin-top: 0.4rem;
-    font-weight: bold;
-    font-size: 0.9rem;
+/* Navbar specific styles (if any beyond Materialize defaults) */
+nav .brand-logo { /* Ensure this is specific enough if Materialize's is different */
+    padding-left: 15px !important; /* Increased specificity if needed */
 }
 
-.rating input[type="radio"]:checked + span {
-    color: #1abc9c; /* Teal for selected option */
+/* Common Card Styling Adjustments (if needed beyond Materialize defaults) */
+.card-panel, .card {
+    /* Example: box-shadow: 0 2px 5px rgba(0,0,0,0.1); if Materialize default shadow needs adjustment */
 }
 
+/* Common heading styles (complementing Materialize's h1-h6) */
+/* Materialize provides h1-h6. Use these directly or Materialize text alignment/color classes. */
+/* Custom global h1,h2,h3 might conflict. Prefer page-specific or component-specific styling. */
 
-.submit-container {
-    margin-top: 2.5rem;
+/* Common list styling overrides for non-Materialize collection lists within custom components */
+/* These are for lists where we want standard bullets, not Materialize collections or custom checkmarks */
+.custom-list ul, .index-page-list ul, .recommendation-list ul, .assessment-instructions-list ul {
+    padding-left: 0; /* Reset padding for custom list container */
+    list-style-type: none; /* Base for custom bullets if any */
+}
+.custom-list li, .index-page-list li, .recommendation-list li, .assessment-instructions-list li {
+    list-style-type: disc !important; /* Use standard bullets */
+    margin-left: 25px; /* Indent for standard bullets */
+    padding-left: 0 !important; /* Override general padding */
+    position: relative; /* Needed if ::before was used, but we are removing it */
+}
+/* Remove the custom checkmark from the old global style */
+.custom-list li::before, .index-page-list li::before, .recommendation-list li::before, .assessment-instructions-list li::before {
+    content: "" !important;
+    display: none !important;
+}
+
+/* Page-Specific Styles from HTML templates moved here */
+
+/* --- Index Page Specific (if any truly generalizable) --- */
+/* .index-page-list handled by .custom-list above */
+/* Card titles for index page are better handled by Materialize classes or page-specific style block if unique */
+
+/* --- Assessment Page Specific --- */
+.progress-text {
     text-align: center;
+    font-size: 1.2em;
+    color: #424242; /* grey darken-3 */
+    margin-bottom: 5px;
 }
 
-/* Results Page Specific Styles */
-.results-summary {
-    background-color: #e8f6f3; /* Light teal/green */
-    padding: 2rem;
-    border-radius: 10px;
-    margin-bottom: 2.5rem;
-    text-align: center;
-    border: 1px solid #d0e9e4;
-}
-
-.results-summary p {
-    font-size: 1.15rem;
-    margin-bottom: 1rem;
-}
-
-.primary-styles {
+.rating-container {
     display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1.5rem;
+    justify-content: space-around;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+/* Materialize radio button label styling (already in assessment.html, keep if it's the only place) */
+/* Or make it global if radio buttons outside assessment page need this exact style. */
+.rating-container [type="radio"].with-gap + span { /* More specific to Materialize */
+    padding-left: 35px; /* Default is 35px, ensure consistency or adjust */
+    font-size: 1.1em; /* Custom font size */
+}
+.rating-container [type="radio"].with-gap:checked + span {
+    /* color: #00796b; /* teal darken-2 for selected (Materialize default is secondary color) */
 }
 
-.primary-style-item { /* Added for better structure */
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    width: calc(50% - 1rem); /* Two items per row on larger screens */
-    min-width: 280px;
+.question-text-material {
+    font-size: 1.4em;
+    color: #212121; /* grey darken-4 */
+    line-height: 1.5;
+    margin-bottom: 1rem; /* Add some space below question text */
 }
 
-.primary-style {
-    background-color: #1abc9c; /* Teal */
-    color: white;
-    padding: 0.7rem 1.2rem;
-    border-radius: 25px;
-    font-weight: bold;
-    font-size: 1.2rem;
-    display: inline-block; /* Allows for padding and centering */
-    margin-bottom: 0.8rem;
+.nav-buttons-assessment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertically align buttons if they have different text lines */
+    margin-top: 20px;
 }
 
-.primary-style-description {
-    font-size: 1rem;
-    color: #555;
-}
-
-
-.scores-container {
-    margin-bottom: 2.5rem;
-}
-
-.scores {
-    margin: 2rem 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.score-item {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    transition: transform 0.2s ease;
-}
-
-.score-item:hover {
-    transform: translateY(-3px);
-}
-
-.style-name {
-    font-weight: bold;
-    font-size: 1.25rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-}
-
-.style-category {
-    font-size: 0.9rem;
-    color: #7f8c8d; /* Asbestos */
-    margin-bottom: 0.5rem;
-}
-
-.style-description { /* Added for consistency with primary styles */
-    font-size: 0.95rem;
-    color: #555;
-    margin-bottom: 1rem;
-}
-
-.score-bar-container {
-    height: 30px; /* Increased height */
-    width: 100%;
-    background-color: #e0e0e0; /* Lighter grey */
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden; /* Ensures score bar stays within container */
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.score-bar {
-    height: 100%;
-    background-image: linear-gradient(45deg, #1abc9c, #16a085); /* Teal gradient */
-    border-radius: 8px 0 0 8px; /* Keep left radius, remove right if text is inside */
-    transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); /* Smoother transition */
-    display: flex; /* For aligning text inside */
-    align-items: center;
-    justify-content: flex-end; /* Align text to the right */
-    padding-right: 10px; /* Padding for the text */
-}
-
-.score-value {
-    /* position: absolute; right: 10px; top: 50%; transform: translateY(-50%); -- Old styling */
-    font-weight: bold;
-    color: #fff; /* White text for better contrast on gradient */
-    font-size: 0.9rem;
-}
-
-.recommendations {
+/* --- Results Page Specific --- */
+.section-title {
+    font-size: 2rem;
+    color: #00796b; /* teal darken-2 */
     margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #b2dfdb; /* teal lighten-4 */
 }
 
-.style-recommendations {
-    background-color: #ffffff;
-    padding: 1.8rem;
-    border-radius: 10px;
-    margin-bottom: 2rem;
-    border-left: 7px solid #1abc9c; /* Thicker, teal border */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+.score-display {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #004d40; /* teal darken-4 */
 }
 
-.style-recommendations h3 {
-    margin-top: 0;
-    color: #16a085; /* Darker teal */
+/* Materialize progress bar is used directly, custom height/colors are in results.html style block */
+/* If .progress .determinate needs global color, define here. Otherwise, keep specific. */
+.primary-style-card-title { /* Used in results for primary style cards */
+    font-size: 1.5rem;
+    font-weight: 500;
 }
 
-.reminder {
-    background-color: #e6fef9; /* Very light teal */
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin: 2.5rem 0 1.5rem;
-    font-style: italic;
-    color: #34495e; /* Wet asphalt */
-    border: 1px solid #c8f0e8;
+.score-item-card { /* Used in results for individual score cards */
+    margin-bottom: 15px;
 }
 
-@media (max-width: 768px) {
-    .container {
-    padding: 2rem; /* Increased padding for smaller screens */
-    margin: 1rem auto;
-    }
-    
-    h1 {
-        font-size: 2rem;
-    }
+/* --- General Error Message Styling --- */
+.error-message-material {
+    color: #D32F2F; /* Material Design error color (Red 700) */
+    background-color: #FFCDD2; /* Red 100 */
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    display: flex; /* For aligning icon and text */
+    align-items: center;
+}
+.error-message-material i.material-icons {
+    margin-right: 10px;
+}
 
-    h2 {
-        font-size: 1.6rem;
-    }
 
-    h3 {
-        font-size: 1.3rem;
-    }
-    
-    .primary-styles {
-        flex-direction: column; /* Stack primary styles on smaller screens */
-        gap: 1rem;
-    }
+/* --- Removing old/conflicting styles --- */
+/* .container - Handled by Materialize, custom tweaks via .main-content-area */
+/* h1, h2, h3 - Use Materialize classes or page-specific styles */
+/* p, li (global) - Materialize handles base styling. Custom list overrides are now more specific. */
+/* ul (global) - Handled by specific list classes or Materialize defaults. */
+/* .btn, .btn.secondary - Handled by Materialize button classes. Add custom button classes if variants needed. */
+/* .instructions - Was page specific, now handled by Materialize cards/panels and custom classes. */
+/* .question, .rating, .submit-container - Old styles, superseded by Materialize structure on assessment page. */
+/* .results-summary, .primary-styles, .primary-style-item, .primary-style, .primary-style-description - Old results page styles, superseded. */
+/* .scores-container, .scores, .score-item, .style-name, .style-category, .style-description - Old results, superseded. */
+/* .score-bar-container, .score-bar, .score-value - Old progress bar, superseded by Materialize .progress. */
+/* .recommendations, .style-recommendations, .reminder - Old results styles, superseded. */
 
-    .primary-style-item {
-        width: 100%; /* Full width for stacked items */
+/* Media queries for custom classes if Materialize grid isn't enough */
+/* For example, if .main-content-area needs different padding on mobile */
+@media (max-width: 600px) { /* Materialize 's' breakpoint */
+    .main-content-area {
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
-
-    .scores {
-        grid-template-columns: 1fr; /* Single column for scores */
-        gap: 1rem;
+    .section-title {
+        font-size: 1.75rem; /* Slightly smaller on mobile */
     }
-
-    .btn {
-        display: block;
+    .nav-buttons-assessment {
+        flex-direction: column; /* Stack buttons on small screens */
+    }
+    .nav-buttons-assessment a.btn-large, .nav-buttons-assessment button.btn-large {
         width: 100%;
-        margin-bottom: 1rem;
-        padding: 1rem 1.5rem; /* Adjust padding for better tap targets */
+        margin-bottom: 10px;
     }
-    
-    .btn.secondary {
-        margin-left: 0;
-    }
-    
-    .rating {
-        max-width: 100%;
-        flex-wrap: wrap; /* Allow rating options to wrap */
-    }
-
-    .rating label {
-        margin-bottom: 0.5rem; /* Space between wrapped rating options */
+     .nav-buttons-assessment span { /* Hide empty span if used for spacing */
+        display: none;
     }
 }
